@@ -1,50 +1,37 @@
 import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
-
-/*== STEP 1 ===============================================================
-The section below creates a Todo database table with a "content" field. Try
-adding a new "isDone" field as a boolean. The authorization rule below
-specifies that any user authenticated via an API key can "create", "read",
-"update", and "delete" any "Todo" records.
-=========================================================================*/
-const schema = a.schema({
-  Todo: a
-    .model({
-      content: a.string(),
-    })
-    .authorization((allow) => [allow.publicApiKey()]),
+import React, { Component } from 'react';
+import './App.css';
+import Amplify, { PubSub } from 'aws-amplify';
+import { AWSIoTProvider } from '@aws-amplify/pubsub/lib/Providers';
+Amplify.configure({
+  Auth: {
+    identityPoolId: process.env.REACT_APP_IDENTITY_POOL_ID,
+    region: process.env.REACT_APP_REGION,
+    userPoolId: process.env.REACT_APP_USER_POOL_ID,
+    userPoolWebClientId: process.env.REACT_APP_USER_POOL_WEB_CLIENT_ID
+  }
 });
-
-export type Schema = ClientSchema<typeof schema>;
-
-export const data = defineData({
-  schema,
-  authorizationModes: {
-    defaultAuthorizationMode: "apiKey",
-    // API Key is used for a.allow.public() rules
-    apiKeyAuthorizationMode: {
-      expiresInDays: 30,
-    },
-  },
+Amplify.addPluggable(new AWSIoTProvider({
+  aws_pubsub_region: process.env.REACT_APP_REGION,
+  aws_pubsub_endpoint: `wss://${process.env.REACT_APP_MQTT_ID}.iot.${process.env.REACT_APP_REGION}.amazonaws.com/mqtt`,
+}));
+Amplify.PubSub.subscribe('real-time-weather').subscribe({
+  next: data => console.log('Message received', data),
+  error: error => console.error(error),
+  close: () => console.log('Done'),
 });
-
-/*== STEP 2 ===============================================================
-Go to your frontend source code. From your client-side code, generate a
-Data client to make CRUDL requests to your table. (THIS SNIPPET WILL ONLY
-WORK IN THE FRONTEND CODE FILE.)
-
-Using JavaScript or Next.js React Server Components, Middleware, Server 
-Actions or Pages Router? Review how to generate Data clients for those use
-cases: https://docs.amplify.aws/gen2/build-a-backend/data/connect-to-API/
-=========================================================================*/
-
-/*
-"use client"
-import { generateClient } from "aws-amplify/data";
-import type { Schema } from "@/amplify/data/resource";
-
-const client = generateClient<Schema>() // use this Data client for CRUDL requests
-*/
-
+class App extends Component {
+  render() {
+    console.log(process.env)
+    return (
+      <div className="App">
+        <h1>Realtime Weather</h1>
+        <p>Check the console..</p>
+      </div>
+    );
+  }
+}
+export default App;
 /*== STEP 3 ===============================================================
 Fetch records from the database and use them in your frontend component.
 (THIS SNIPPET WILL ONLY WORK IN THE FRONTEND CODE FILE.)
